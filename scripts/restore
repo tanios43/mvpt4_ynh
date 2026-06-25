@@ -1,0 +1,21 @@
+#!/bin/bash
+source _common.sh
+source /usr/share/yunohost/helpers
+
+ynh_script_progression --message="Restauration des fichiers..." --weight=3
+ynh_restore_file --origin_path="$install_dir"
+ynh_restore_file --origin_path="$data_dir"
+
+ynh_script_progression --message="Restauration de NGINX..." --weight=1
+ynh_restore_file --origin_path="/etc/nginx/conf.d/$domain.d/$app.conf"
+
+ynh_script_progression --message="Restauration du service..." --weight=1
+ynh_restore_file --origin_path="/etc/systemd/system/$app.service"
+systemctl enable "$app.service" --quiet
+yunohost service add "$app" --description="MVPT-4 Calculateur" --log="/var/log/$app/$app.log"
+
+chown -R "$app:$app" "$install_dir"
+chown -R "$app:$app" "$data_dir"
+
+ynh_systemd_action --service_name="$app" --action="start"
+ynh_script_progression --message="Restauration terminée !" --last

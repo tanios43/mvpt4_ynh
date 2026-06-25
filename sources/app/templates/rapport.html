@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>MVPT-4 — Rapport {{ session.patient_name }}</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 40px auto; color: #1a1917; }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    .meta { color: #9b9890; font-size: 12px; margin-bottom: 24px; }
+    h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #6b6860;
+         border-bottom: 1px solid #e5e5e5; padding-bottom: 4px; margin-top: 28px; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
+    .metric { background: #f5f3ee; padding: 14px; border-radius: 6px; }
+    .metric-lbl { font-size: 10px; text-transform: uppercase; color: #9b9890; }
+    .metric-val { font-size: 30px; font-weight: bold; font-family: monospace; }
+    .metric-sub { font-size: 10px; color: #9b9890; }
+    .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-weight: bold; font-size: 12px; }
+    .green  { background: #dcfce7; color: #16a34a; }
+    .orange { background: #fef9c3; color: #7a6f00; }
+    .red    { background: #fee2e2; color: #dc2626; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    td, th { padding: 6px 10px; border-bottom: 1px solid #eee; text-align: left; }
+    .bar-bg { background: #e5e5e5; height: 8px; border-radius: 4px; overflow: hidden; width: 120px; display: inline-block; vertical-align: middle; }
+    .bar-fill { height: 8px; border-radius: 4px; }
+    .footer { margin-top: 40px; font-size: 10px; color: #ccc; }
+    @media print { body { margin: 20px; } }
+  </style>
+</head>
+<body>
+<h1>{{ session.patient_name or 'Patient' }}</h1>
+<p class="meta">
+  Né(e) le {{ session.dob }} &nbsp;·&nbsp; Test : {{ session.testdate }}
+  {% if session.examiner %} &nbsp;·&nbsp; Examinateur : {{ session.examiner }} {% endif %}
+</p>
+
+{% if result %}
+<h2>Scores</h2>
+<div class="grid">
+  <div class="metric">
+    <div class="metric-lbl">Score brut</div>
+    <div class="metric-val">{{ result.raw }}</div>
+    <div class="metric-sub">sur 45</div>
+  </div>
+  <div class="metric">
+    <div class="metric-lbl">Score standard</div>
+    <div class="metric-val">{{ result.standard_score_display }}</div>
+    <div class="metric-sub">{{ result.age_col }}</div>
+  </div>
+  <div class="metric">
+    <div class="metric-lbl">Percentile</div>
+    <div class="metric-val">{{ result.percentile }}{% if result.percentile is number %}e{% endif %}</div>
+  </div>
+  <div class="metric">
+    <div class="metric-lbl">Âge équivalent</div>
+    <div class="metric-val" style="font-size:1.4rem">{{ result.age_equiv }}</div>
+  </div>
+</div>
+
+<h2>Interprétation</h2>
+<p><span class="badge {{ result.interpretation_color }}">{{ result.interpretation_label }}</span></p>
+<p>{{ result.interpretation_text }}</p>
+
+<h2>Scores par sous-domaine</h2>
+<table>
+  <thead><tr><th>Sous-domaine</th><th>Score</th><th></th></tr></thead>
+  <tbody>
+  {% for key, (label, items) in sections.items() %}
+    {% set score = result.sub_scores.get(key, 0) %}
+    {% set ratio = (score / items|length * 100)|round|int %}
+    <tr>
+      <td>{{ label }}</td>
+      <td>{{ score }}/{{ items|length }}</td>
+      <td>
+        <div class="bar-bg"><div class="bar-fill" style="width:{{ ratio }}%; background:{% if score >= 5 %}#16a34a{% elif score >= 3 %}#ca8a04{% else %}#dc2626{% endif %}"></div></div>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p><em>Scores non disponibles (dates manquantes).</em></p>
+{% endif %}
+
+{% if session.notes %}
+<h2>Notes de l'examinateur</h2>
+<p>{{ session.notes }}</p>
+{% endif %}
+
+<p class="footer">Généré par MVPT-4 Calculator · {{ session.saved_at[:16].replace('T', ' ') }}</p>
+<script>window.onload = function(){ window.print(); }</script>
+</body>
+</html>

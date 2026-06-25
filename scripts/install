@@ -1,0 +1,57 @@
+#!/bin/bash
+source _common.sh
+source /usr/share/yunohost/helpers
+
+#=================================================
+# INSTALLATION DES SOURCES
+#=================================================
+ynh_script_progression --message="Installation des fichiers de l'application..." --weight=3
+
+ynh_setup_source --dest_dir="$install_dir"
+
+#=================================================
+# ENVIRONNEMENT PYTHON
+#=================================================
+ynh_script_progression --message="Création de l'environnement Python..." --weight=5
+
+python3 -m venv "$install_dir/venv"
+"$install_dir/venv/bin/pip" install --upgrade pip
+"$install_dir/venv/bin/pip" install flask gunicorn
+
+#=================================================
+# BASE DE DONNÉES SQLITE
+#=================================================
+ynh_script_progression --message="Initialisation de la base de données..." --weight=1
+
+mkdir -p "$data_dir"
+"$install_dir/venv/bin/python3" "$install_dir/app/init_db.py" "$data_dir/mvpt4.db"
+chown -R "$app:$app" "$data_dir"
+
+#=================================================
+# CONFIGURATION NGINX
+#=================================================
+ynh_script_progression --message="Configuration de NGINX..." --weight=1
+
+ynh_add_nginx_config
+
+#=================================================
+# SERVICE SYSTEMD
+#=================================================
+ynh_script_progression --message="Configuration du service systemd..." --weight=1
+
+ynh_add_systemd_config
+yunohost service add "$app" --description="MVPT-4 Calculateur" --log="/var/log/$app/$app.log"
+
+#=================================================
+# PERMISSIONS
+#=================================================
+chown -R "$app:$app" "$install_dir"
+
+#=================================================
+# DÉMARRAGE DU SERVICE
+#=================================================
+ynh_script_progression --message="Démarrage du service..." --weight=1
+
+ynh_systemd_action --service_name="$app" --action="start" --log_path="/var/log/$app/$app.log"
+
+ynh_script_progression --message="Installation terminée !" --last
