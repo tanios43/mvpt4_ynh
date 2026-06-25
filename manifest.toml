@@ -44,11 +44,12 @@ ram.runtime = "50M"
 
     [resources.data_dir]
 
-    [resources.permissions]
+    [resources.ports]
+    main.default = 5000
 
-        [resources.permissions.main]
-        url = "/"
-        auth_header = false
+    [resources.permissions]
+    main.url = "/"
+    main.auth_header = false
 
     [resources.apt]
     packages = "python3, python3-pip, python3-venv, sqlite3"

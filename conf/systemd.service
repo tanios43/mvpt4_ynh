@@ -1,30 +1,23 @@
 [Unit]
-Description=MVPT-4 Calculateur (gunicorn)
+Description=MVPT-4 Calculateur
 After=network.target
 
 [Service]
 Type=simple
 User=__APP__
-Group=__APP__
+Group=www-data
 WorkingDirectory=__INSTALL_DIR__
+Environment="PATH=__INSTALL_DIR__/venv/bin:/usr/bin"
 Environment="DB_PATH=__DATA_DIR__/mvpt4.db"
-Environment="SECRET_KEY=__SECRET_KEY__"
 ExecStart=__INSTALL_DIR__/venv/bin/gunicorn \
     --workers 2 \
     --bind 127.0.0.1:__PORT__ \
     --timeout 60 \
-    --access-logfile /var/log/__APP__/__APP__.log \
-    --error-logfile /var/log/__APP__/__APP__-error.log \
+    --log-file /var/log/__APP__/__APP__.log \
+    --access-logfile /var/log/__APP__/access.log \
     wsgi:app
-
-Restart=on-failure
-RestartSec=5s
-
-# Sécurité
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ReadWritePaths=__DATA_DIR__ /var/log/__APP__
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
