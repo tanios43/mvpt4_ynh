@@ -7,11 +7,11 @@ description.fr = "Calculateur de scores MVPT-4 (Motor-Free Visual Perception Tes
 
 version = "1.0~ynh1"
 
-maintainers = []
+maintainers = ["tanios43"]
 
 [upstream]
 license = "AGPL-3.0-or-later"
-code = "https://github.com/votre-org/mvpt4_ynh"
+code = "https://github.com/tanios43/mvpt4_ynh"
 
 [integration]
 yunohost = ">= 11.2"
@@ -41,8 +41,8 @@ ram.runtime = "50M"
     [resources.sources]
 
         [resources.sources.main]
-        url = "https://github.com/votre-org/mvpt4_ynh/archive/refs/heads/main.tar.gz"
-        sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+        url = "https://github.com/tanios43/mvpt4_ynh/archive/refs/tags/v1.0.tar.gz"
+        sha256 = "73e08369791b1b51ae89b54eabffc42ef170ffcee222c67f965252b190503633"
         autoupdate.strategy = "latest_github_tag"
 
     [resources.system_user]
