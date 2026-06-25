@@ -38,13 +38,6 @@ ram.runtime = "50M"
 
 [resources]
 
-    [resources.sources]
-
-        [resources.sources.main]
-        url = "https://github.com/tanios43/mvpt4_ynh/archive/refs/tags/v1.0.tar.gz"
-        sha256 = "aef02c7ad6087fd4ccf657e97d2781465a130d52d13307dc9aceab499b0d7812"
-        autoupdate.strategy = "latest_github_tag"
-
     [resources.system_user]
 
     [resources.install_dir]
