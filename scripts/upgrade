@@ -1,25 +1,62 @@
 #!/bin/bash
-source _common.sh
 source /usr/share/yunohost/helpers
 
+#=================================================
+# ARRÊT DU SERVICE
+#=================================================
 ynh_script_progression --message="Arrêt du service..." --weight=1
+
 ynh_systemd_action --service_name="$app" --action="stop"
 
+#=================================================
+# MISE À JOUR DES FICHIERS
+#=================================================
 ynh_script_progression --message="Mise à jour des sources..." --weight=3
-ynh_setup_source --dest_dir="$install_dir" --keep="app/config.py"
 
+if [ -d "$YNH_APP_BASEDIR/sources/extra_files/app" ]; then
+    cp -r "$YNH_APP_BASEDIR/sources/extra_files/app/." "$install_dir/"
+fi
+
+#=================================================
+# MISE À JOUR DES DÉPENDANCES PYTHON
+#=================================================
 ynh_script_progression --message="Mise à jour des dépendances Python..." --weight=3
-"$install_dir/venv/bin/pip" install --upgrade flask gunicorn
 
-ynh_script_progression --message="Mise à jour de la configuration NGINX..." --weight=1
+if [ ! -d "$install_dir/venv" ]; then
+    python3 -m venv "$install_dir/venv"
+fi
+"$install_dir/venv/bin/pip" install --upgrade pip --quiet
+"$install_dir/venv/bin/pip" install flask gunicorn --quiet
+
+#=================================================
+# MISE À JOUR DE LA CONFIGURATION NGINX
+#=================================================
+ynh_script_progression --message="Mise à jour de la configuration nginx..." --weight=1
+
 ynh_add_nginx_config
 
+#=================================================
+# MISE À JOUR DU SERVICE SYSTEMD
+#=================================================
 ynh_script_progression --message="Mise à jour du service systemd..." --weight=1
+
 ynh_add_systemd_config
 
-chown -R "$app:$app" "$install_dir"
+#=================================================
+# PERMISSIONS
+#=================================================
+ynh_script_progression --message="Configuration des permissions..." --weight=1
 
+chown -R "$app:www-data" "$install_dir"
+chown -R "$app:$app" "$data_dir"
+chmod -R o-rwx "$install_dir"
+chmod -R o-rwx "$data_dir"
+
+#=================================================
+# REDÉMARRAGE DU SERVICE
+#=================================================
 ynh_script_progression --message="Redémarrage du service..." --weight=1
-ynh_systemd_action --service_name="$app" --action="start"
+
+ynh_systemd_action --service_name="$app" --action="start" --log_path="/var/log/$app/$app.log"
 
 ynh_script_progression --message="Mise à jour terminée !" --last
