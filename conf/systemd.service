@@ -15,7 +15,7 @@ ExecStart=__INSTALL_DIR__/venv/bin/gunicorn \
     --timeout 60 \
     --log-file /var/log/__APP__/__APP__.log \
     --access-logfile /var/log/__APP__/access.log \
-    wsgi:app
+    wsgi:application
 Restart=always
 RestartSec=5
 
