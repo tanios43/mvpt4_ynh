@@ -24,7 +24,7 @@ python3 -m venv "$install_dir/venv"
 ynh_script_progression --message="Initialisation de la base de données..." --weight=1
 
 mkdir -p "$data_dir"
-"$install_dir/venv/bin/python3" "$install_dir/app/init_db.py" "$data_dir/mvpt4.db"
+"$install_dir/venv/bin/python3" "$install_dir/init_db.py" "$data_dir/mvpt4.db"
 chown -R "$app:$app" "$data_dir"
 
 #=================================================

@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=__APP__
 Group=__APP__
-WorkingDirectory=__INSTALL_DIR__/app
+WorkingDirectory=__INSTALL_DIR__
 Environment="DB_PATH=__DATA_DIR__/mvpt4.db"
 Environment="SECRET_KEY=__SECRET_KEY__"
 ExecStart=__INSTALL_DIR__/venv/bin/gunicorn \
