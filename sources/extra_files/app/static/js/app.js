@@ -9,6 +9,7 @@ const state = {
   sessionId: null,
   answers: {},        // { "1": "A", "2": "—", ... }
   selectedSessionId: null,
+  _lastLoadedName: null,  // nom du patient chargé depuis une session existante
 };
 
 // Initialiser les réponses à '—'
@@ -39,11 +40,6 @@ function switchTab(name) {
 //  SAISIE DATE AVEC MASQUE
 // ══════════════════════════════════════
 function setupDateInput(input) {
-  // Affiche "JJ/MM/AAAA" en gris au départ
-  input.addEventListener('focus', () => {
-    if (!input.value) input.value = '';
-  });
-
   input.addEventListener('input', () => {
     let raw = input.value.replace(/\D/g, '');
     let out = '';
@@ -56,7 +52,6 @@ function setupDateInput(input) {
 
   input.addEventListener('keydown', e => {
     if (e.key === 'Backspace') {
-      // Supprimer aussi le slash si cursor est après
       const pos = input.selectionStart;
       if (pos > 0 && input.value[pos - 1] === '/') {
         input.value = input.value.slice(0, pos - 1) + input.value.slice(pos);
@@ -145,7 +140,16 @@ function updateProgress() {
   setStatus(`${answered}/45 items renseignés`);
 }
 
-document.getElementById('patient-name').addEventListener('input', updateProgress);
+// ── Réinitialiser sessionId si le nom change et ne correspond plus au patient chargé ──
+document.getElementById('patient-name').addEventListener('input', () => {
+  const currentName = document.getElementById('patient-name').value.trim();
+  if (state._lastLoadedName !== null && currentName !== state._lastLoadedName) {
+    // L'utilisateur a modifié le nom : on coupe le lien avec la session existante
+    state.sessionId = null;
+    state._lastLoadedName = null;
+  }
+  updateProgress();
+});
 
 // ══════════════════════════════════════
 //  CALCULER
@@ -213,6 +217,15 @@ document.getElementById('btn-calculate').addEventListener('click', calculate);
 //  SAUVEGARDER
 // ══════════════════════════════════════
 async function saveSession(extra = {}) {
+  const name = document.getElementById('patient-name').value.trim();
+  const answered = Object.values(state.answers).filter(v => v !== '—').length;
+  if (answered === 0 && !name) return;
+
+  // Si pas de sessionId, en générer un nouveau (nouveau patient)
+  if (!state.sessionId) {
+    state.sessionId = String(Date.now());
+  }
+
   const payload = {
     id:           state.sessionId,
     patient_name: document.getElementById('patient-name').value,
@@ -224,9 +237,6 @@ async function saveSession(extra = {}) {
     ...extra
   };
 
-  const answered = Object.values(state.answers).filter(v => v !== '—').length;
-  if (answered === 0 && !payload.patient_name.trim()) return;
-
   const res  = await fetch('/api/sessions', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -234,6 +244,7 @@ async function saveSession(extra = {}) {
   });
   const data = await res.json();
   state.sessionId = data.id;
+  state._lastLoadedName = document.getElementById('patient-name').value.trim();
   setStatus(`Session sauvegardée — ${data.saved_at.substring(11, 16)}`);
 }
 
@@ -246,7 +257,10 @@ document.getElementById('btn-save2').addEventListener('click', () => saveSession
 function newSession() {
   if (!confirm('Démarrer un nouveau test ?\nLa session actuelle sera sauvegardée.')) return;
   saveSession();
+
+  // Réinitialiser l'état complètement
   state.sessionId = null;
+  state._lastLoadedName = null;
   state.answers   = {};
   for (let n = 1; n <= 45; n++) state.answers[String(n)] = '—';
 
@@ -254,7 +268,6 @@ function newSession() {
   document.getElementById('patient-dob').value      = '';
   document.getElementById('patient-examiner').value = '';
   document.getElementById('patient-notes').value    = '';
-  // Date du test = aujourd'hui
   const today = new Date();
   document.getElementById('patient-testdate').value =
     String(today.getDate()).padStart(2,'0') + '/' +
@@ -311,7 +324,6 @@ async function loadSessions() {
     tbody.appendChild(tr);
   });
 
-  // Compteur
   document.getElementById('search-count').textContent =
     sessions.length ? `${sessions.length} session(s)` : 'Aucun résultat';
 }
@@ -326,6 +338,7 @@ async function loadSelectedSession(sid) {
   const s = await res.json();
 
   state.sessionId = s.id;
+  state._lastLoadedName = s.patient_name ? s.patient_name.trim() : null;
   state.answers   = {};
   for (let n = 1; n <= 45; n++) state.answers[String(n)] = '—';
   Object.assign(state.answers, s.answers || {});
@@ -348,7 +361,10 @@ async function deleteSelectedSession() {
   if (!state.selectedSessionId) { alert('Sélectionnez une session.'); return; }
   if (!confirm('Supprimer cette session ?')) return;
   await fetch('/api/sessions/' + state.selectedSessionId, { method: 'DELETE' });
-  if (state.sessionId === state.selectedSessionId) state.sessionId = null;
+  if (state.sessionId === state.selectedSessionId) {
+    state.sessionId = null;
+    state._lastLoadedName = null;
+  }
   state.selectedSessionId = null;
   loadSessions();
   setStatus('Session supprimée.');
