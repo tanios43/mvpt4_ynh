@@ -53,6 +53,23 @@ ynh_add_systemd_config
 yunohost service add "$app" --description="MVPT-4 Calculateur" --log="/var/log/$app/$app.log"
 
 #=================================================
+# LOGO
+#=================================================
+ynh_script_progression --message="Installation du logo..." --weight=1
+
+if [ -f "$install_dir/doc/LOGO.png" ]; then
+    cp "$install_dir/doc/LOGO.png" /usr/share/yunohost/portal/customassets/${app}.png 2>/dev/null || true
+    python3 - <<PYEOF
+from yunohost.permission import _update_app_permission_setting
+try:
+    with open('$install_dir/doc/LOGO.png', 'rb') as f:
+        _update_app_permission_setting('${app}.main', logo=f)
+except Exception as e:
+    print(f"Logo update skipped: {e}")
+PYEOF
+fi
+
+#=================================================
 # PERMISSIONS
 #=================================================
 ynh_script_progression --message="Configuration des permissions..." --weight=1
